@@ -26,6 +26,11 @@ import static java.lang.Math.pow;
  * **/
 public class MainTest extends Application {
     /**
+     * Count of tests that applies to each algorithm on each M = 2 ^ x
+     * **/
+    private final static int TESTS_COUNT = 50;
+
+    /**
      * Launch start() method JavaFX application
      * **/
     public static void main(String[] args) {
@@ -44,6 +49,8 @@ public class MainTest extends Application {
 
     /**
      * Generates table where table[i][j] = (n / m * i + j) * 2, target = 2 * n + 1
+     * @param m row count
+     * @param n column count
      * **/
     private static TableGeneration firstTableGeneration(int m, int n) {
         int[][] table = new int[m][n];
@@ -57,6 +64,8 @@ public class MainTest extends Application {
 
     /**
      * Generates table where table[i][j] = (n / m * i * j) * 2, target = 16 * n + 1
+     * @param m row count
+     * @param n column count
      * **/
     private static TableGeneration secondGenerationTable(int m, int n) {
         int[][] table = new int[m][n];
@@ -70,6 +79,8 @@ public class MainTest extends Application {
 
     /**
      * Apply binary search to each row trying to find target.
+     * @param table table M * N
+     * @param target element is going to be searched within table
      * **/
     public static Pair<Integer, Integer> binarySearchAlgorithm(int[][] table, int target) {
         for (int row = 0; row < table.length; ++row) {
@@ -86,6 +97,8 @@ public class MainTest extends Application {
      * If current element is less than target -> go to the next row,
      * if current element is greater than target -> go to the previous column
      * if current element equals to target -> return [row, column].
+     * @param table table M * N
+     * @param target element is going to be searched within table
      * **/
     public static Pair<Integer, Integer> ladderSearchAlgorithm(int[][] table, int target) {
         int currentRow = 0, currentColumn = table[0].length - 1;
@@ -103,6 +116,8 @@ public class MainTest extends Application {
 
     /**
      * Main logic like at ladder algorithm, but now current column is found using exponent search.
+     * @param table table M * N
+     * @param target element is going to be searched within table
      * **/
     public static Pair<Integer, Integer> ladderExponentSearchAlgorithm(int[][] table, int target) {
         int currentRow = 0, currentColumn = table[0].length - 1;
@@ -122,6 +137,9 @@ public class MainTest extends Application {
     /**
      * Returns the index of target element in array if array contains that element.
      * Else returns (-(insertion point) - 1) where insertion point is a place where target element should take place
+     * @param arr array within target should be searched
+     * @param start start index left which target should be searched
+     * @param target element is going to be searched
      * **/
     private static int exponentSearch(int[] arr, int start, int target) {
         if (arr.length == 0) return -1;
@@ -141,6 +159,7 @@ public class MainTest extends Application {
     /**
      * Fixes start time in nanoseconds, starts algorithm, fixes end time in nanoseconds and returns
      * difference between end and start
+     * @param algorithm algorithm to be tested
      * **/
     private static long testAlgorithm(Algorithm algorithm) {
         long start = System.nanoTime();
@@ -173,19 +192,33 @@ public class MainTest extends Application {
     /**
      * Enriches line chart with 3 lines which called 'Binary search', 'Ladder search' and 'Ladder exponent search'.
      * Table generator is used to generate table and receive target
-     * Test each algorithm and add information at chart
+     * Test each algorithm and add information at chart. To make results more honest each algorithm is tested
+     * TESTS_COUNT = 25 times and then takes average value from all test.
+     * @param lineChart line chart to be enriched with points
+     * @param tableGenerator table generator which provides table and target
      * **/
     private static void enrichLineChart(LineChart<Number, Number> lineChart, TableGenerator tableGenerator) {
         int n = (int)pow(2, 13);
         List<Pair<Number, Number>> binarySearchData = new ArrayList<>();
         List<Pair<Number, Number>> ladderSearchData = new ArrayList<>();
         List<Pair<Number, Number>> ladderExponentSearchData = new ArrayList<>();
+        long[] binarySearchTimeResults = new long[TESTS_COUNT];
+        long[] ladderSearchTimeResults = new long[TESTS_COUNT];
+        long[] ladderExponentSearchTimeResults = new long[TESTS_COUNT];
         for (int i = 0; i <= 13; ++i) {
             int m = (int)pow(2, i);
             TableGeneration tableGeneration = tableGenerator.generateTable(m, n);
-            binarySearchData.add(new Pair<>(m, testAlgorithm(() -> binarySearchAlgorithm(tableGeneration.table, tableGeneration.target))));
-            ladderSearchData.add(new Pair<>(m, testAlgorithm(() -> ladderSearchAlgorithm(tableGeneration.table, tableGeneration.target))));
-            ladderExponentSearchData.add(new Pair<>(m, testAlgorithm(() -> ladderExponentSearchAlgorithm(tableGeneration.table, tableGeneration.target))));
+            for (int test = 0; test < TESTS_COUNT; ++test) {
+                binarySearchTimeResults[test] = testAlgorithm(() -> binarySearchAlgorithm(tableGeneration.table, tableGeneration.target));
+                ladderSearchTimeResults[test] = testAlgorithm(() -> ladderSearchAlgorithm(tableGeneration.table, tableGeneration.target));
+                ladderExponentSearchTimeResults[test] = testAlgorithm(() -> ladderExponentSearchAlgorithm(tableGeneration.table, tableGeneration.target));
+            }
+            long binarySearchAverageResult = Arrays.stream(binarySearchTimeResults).sum() / TESTS_COUNT;
+            long ladderSearchAverageResult = Arrays.stream(ladderSearchTimeResults).sum() / TESTS_COUNT;
+            long ladderExponentSearchAverageResult = Arrays.stream(ladderExponentSearchTimeResults).sum() / TESTS_COUNT;
+            binarySearchData.add(new Pair<>(m, binarySearchAverageResult));
+            ladderSearchData.add(new Pair<>(m, ladderSearchAverageResult));
+            ladderExponentSearchData.add(new Pair<>(m, ladderExponentSearchAverageResult));
         }
         lineChart.getData().add(getOneLineAtChart("Binary search", binarySearchData));
         lineChart.getData().add(getOneLineAtChart("Ladder search", ladderSearchData));
@@ -194,6 +227,8 @@ public class MainTest extends Application {
 
     /**
      * Creates new line at chart from list of points where key = x value and value = y value with name passed as parameter
+     * @param name name of the line on a chart
+     * @param data list of points to be added to a chart. Pair.key = time in microseconds, Pair.value = M (2 ^ x)
      * **/
     private static XYChart.Series<Number, Number> getOneLineAtChart(String name, List<Pair<Number, Number>> data) {
         XYChart.Series<Number, Number> series = new XYChart.Series<>();

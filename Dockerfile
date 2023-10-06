@@ -1,7 +1,3 @@
 FROM java:21
-WORKDIR /app
-COPY .mvn/ .mvn
-COPY mvnw pom.xml ./
-RUN ./mvnw dependency:resolve
-COPY src ./src
-CMD ["./mvnw", ]
+COPY target/algorithms_laba1-1.0-SNAPSHOT.jar app.jar
+CMD ["java", "-jar", "app.jar"]

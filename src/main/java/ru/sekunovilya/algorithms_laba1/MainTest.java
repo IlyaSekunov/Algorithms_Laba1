@@ -12,84 +12,34 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static java.lang.Math.max;
 import static java.lang.Math.pow;
 
+/**
+ * Class that tests 3 algorithms to search target element within N * M matrix.
+ * N <= M, N = 2 ^ 13, M = 2 ^ x. Class can use two ways of table generation:
+ * 1) A[i][j] = (N / M * i + j) * 2, target = 2 * n + 1;
+ * 2) A[i][j] = (N / M * i * j) * 2, target = 16 * n + 1;
+ * To change table generation just pass the appropriate function that generates table (firstTableGeneration(n, m) or
+ * secondTableGeneration(n, m)) to function enrichLineChart(ListChart, TableGenerator). To make it more useful I created
+ * functional interface TableGenerator which has method generateTable(m, n) which returns table and according target.
+ * **/
 public class MainTest extends Application {
-    @Override
-    public void start(Stage stage) {
-        LineChart<Number, Number> lineChart = createLineChart();
-        enrichLineChart(lineChart, MainTest::secondGenerationTable);
-        drawChart(lineChart, stage);
-    }
-
+    /**
+     * Launch start() method JavaFX application
+     * **/
     public static void main(String[] args) {
         launch(args);
     }
 
     /**
-     * Draws line chart
-     * */
-    private static void drawChart(LineChart<Number, Number> lineChart, Stage stage) {
-        stage.setScene(new Scene(lineChart, 800, 600));
-        stage.show();
-    }
-
-    /**
-     * Enriches line chart with 3 lines which called 'Binary search', 'Ladder search' and 'Ladder exponent search'.
-     * Table generator is used to generate table and receive target
-     * Test each algorithm and add information at chart
+     * Starts the JavaFX application in order to draw graphics which reflects algorithms tests
      * **/
-    private static void enrichLineChart(LineChart<Number, Number> lineChart, TableGenerator tableGenerator) {
-        int n = (int)pow(2, 13);
-        List<Pair<Number, Number>> binarySearchData = new ArrayList<>();
-        List<Pair<Number, Number>> ladderSearchData = new ArrayList<>();
-        List<Pair<Number, Number>> ladderExponentSearchData = new ArrayList<>();
-        for (int i = 0; i < 13; ++i) {
-            int m = (int)pow(2, i);
-            TableGeneration tableGeneration = tableGenerator.generateTable(m, n);
-            binarySearchData.add(new Pair<>(m, testAlgorithm(() -> binarySearchAlgorithm(tableGeneration.table, tableGeneration.target))));
-            ladderSearchData.add(new Pair<>(m, testAlgorithm(() -> ladderSearchAlgorithm(tableGeneration.table, tableGeneration.target))));
-            ladderExponentSearchData.add(new Pair<>(m, testAlgorithm(() -> ladderExponentSearchAlgorithm(tableGeneration.table, tableGeneration.target))));
-        }
-        lineChart.getData().add(getOneLineAtChart("Binary search", binarySearchData));
-        lineChart.getData().add(getOneLineAtChart("Ladder search", ladderSearchData));
-        lineChart.getData().add(getOneLineAtChart("Ladder exponent search", ladderExponentSearchData));
-    }
-
-    /**
-     * Creates line chart
-     * **/
-    private static LineChart<Number, Number> createLineChart() {
-        NumberAxis xAxis = new NumberAxis();
-        NumberAxis yAxis = new NumberAxis();
-        yAxis.setLabel("Time in microseconds");
-        xAxis.setLabel("m");
-        LineChart<Number, Number> lineChart = new LineChart<>(xAxis, yAxis);
-        lineChart.setTitle("Algorithms");
-        return lineChart;
-    }
-
-    /**
-     * Creates new line at chart from list of points where key = x value and value = y value with name passed as parameter
-     * **/
-    private static XYChart.Series<Number, Number> getOneLineAtChart(String name, List<Pair<Number, Number>> data) {
-        XYChart.Series<Number, Number> series = new XYChart.Series<>();
-        series.setName(name);
-        for (Pair<Number, Number> dot : data) {
-            series.getData().add(new XYChart.Data<>(dot.getKey(), dot.getValue()));
-        }
-        return series;
-    }
-
-    /**
-     * Fixes start time in nanoseconds, starts algorithm, fixes end time in nanoseconds and returns
-     * difference between end and start
-     * **/
-    private static long testAlgorithm(Algorithm algorithm) {
-        long start = System.nanoTime();
-        algorithm.start();
-        long end = System.nanoTime();
-        return end - start;
+    @Override
+    public void start(Stage stage) {
+        LineChart<Number, Number> lineChart = createLineChart();
+        enrichLineChart(lineChart, MainTest::secondGenerationTable);
+        drawChart(lineChart, stage);
     }
 
     /**
@@ -161,7 +111,7 @@ public class MainTest extends Application {
                 ++currentRow;
             } else if (table[currentRow][currentColumn] > target) {
                 currentColumn = exponentSearch(table[currentRow], currentColumn, target);
-                if (table[currentRow][currentColumn] > target) --currentColumn;
+                if (currentColumn < 0) currentColumn = -(currentColumn + 2);
             } else {
                 return new Pair<>(currentRow, currentColumn);
             }
@@ -169,17 +119,88 @@ public class MainTest extends Application {
         return new Pair<>(-1, -1);
     }
 
+    /**
+     * Returns the index of target element in array if array contains that element.
+     * Else returns (-(insertion point) - 1) where insertion point is a place where target element should take place
+     * **/
     private static int exponentSearch(int[] arr, int start, int target) {
+        if (arr.length == 0) return -1;
+        if (arr[start] == target) return start;
         int right = start, left = right;
         for (int i = 1; left >= 0; i *= 2) {
             if (arr[left] > target) {
                 right = left - 1;
                 left -= i;
             } else {
-                int index = Arrays.binarySearch(arr, left, right, target);
-                return index >= 0 ? index : -(index + 1);
+                return Arrays.binarySearch(arr, left, right + 1, target);
             }
         }
-        return 0;
+        return Arrays.binarySearch(arr, 0, max(0, right) + 1, target);
+    }
+
+    /**
+     * Fixes start time in nanoseconds, starts algorithm, fixes end time in nanoseconds and returns
+     * difference between end and start
+     * **/
+    private static long testAlgorithm(Algorithm algorithm) {
+        long start = System.nanoTime();
+        algorithm.start();
+        long end = System.nanoTime();
+        return end - start;
+    }
+
+    /**
+     * Creates line chart
+     * **/
+    private static LineChart<Number, Number> createLineChart() {
+        NumberAxis xAxis = new NumberAxis();
+        NumberAxis yAxis = new NumberAxis();
+        yAxis.setLabel("Time in microseconds");
+        xAxis.setLabel("M");
+        LineChart<Number, Number> lineChart = new LineChart<>(xAxis, yAxis);
+        lineChart.setTitle("Algorithms");
+        return lineChart;
+    }
+
+    /**
+     * Draws line chart
+     * */
+    private static void drawChart(LineChart<Number, Number> lineChart, Stage stage) {
+        stage.setScene(new Scene(lineChart, 800, 600));
+        stage.show();
+    }
+
+    /**
+     * Enriches line chart with 3 lines which called 'Binary search', 'Ladder search' and 'Ladder exponent search'.
+     * Table generator is used to generate table and receive target
+     * Test each algorithm and add information at chart
+     * **/
+    private static void enrichLineChart(LineChart<Number, Number> lineChart, TableGenerator tableGenerator) {
+        int n = (int)pow(2, 13);
+        List<Pair<Number, Number>> binarySearchData = new ArrayList<>();
+        List<Pair<Number, Number>> ladderSearchData = new ArrayList<>();
+        List<Pair<Number, Number>> ladderExponentSearchData = new ArrayList<>();
+        for (int i = 0; i <= 13; ++i) {
+            int m = (int)pow(2, i);
+            TableGeneration tableGeneration = tableGenerator.generateTable(m, n);
+            binarySearchData.add(new Pair<>(m, testAlgorithm(() -> binarySearchAlgorithm(tableGeneration.table, tableGeneration.target))));
+            ladderSearchData.add(new Pair<>(m, testAlgorithm(() -> ladderSearchAlgorithm(tableGeneration.table, tableGeneration.target))));
+            ladderExponentSearchData.add(new Pair<>(m, testAlgorithm(() -> ladderExponentSearchAlgorithm(tableGeneration.table, tableGeneration.target))));
+        }
+        lineChart.getData().add(getOneLineAtChart("Binary search", binarySearchData));
+        lineChart.getData().add(getOneLineAtChart("Ladder search", ladderSearchData));
+        lineChart.getData().add(getOneLineAtChart("Ladder exponent search", ladderExponentSearchData));
+    }
+
+    /**
+     * Creates new line at chart from list of points where key = x value and value = y value with name passed as parameter
+     * **/
+    private static XYChart.Series<Number, Number> getOneLineAtChart(String name, List<Pair<Number, Number>> data) {
+        XYChart.Series<Number, Number> series = new XYChart.Series<>();
+        series.setName(name);
+        for (Pair<Number, Number> dot : data) {
+            series.getData().add(new XYChart.Data<>(dot.getKey(), dot.getValue()));
+        }
+        return series;
     }
 }

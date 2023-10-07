@@ -28,7 +28,7 @@ public class MainTest extends Application {
     /**
      * Count of tests that applies to each algorithm on each M = 2 ^ x
      * **/
-    private final static int TESTS_COUNT = 50;
+    private final static int TESTS_COUNT = 100;
 
     /**
      * Launch start() method JavaFX application
@@ -43,7 +43,7 @@ public class MainTest extends Application {
     @Override
     public void start(Stage stage) {
         LineChart<Number, Number> lineChart = createLineChart();
-        enrichLineChart(lineChart, MainTest::secondGenerationTable);
+        enrichLineChart(lineChart, MainTest::secondTableGeneration);
         drawChart(lineChart, stage);
     }
 
@@ -67,7 +67,7 @@ public class MainTest extends Application {
      * @param m row count
      * @param n column count
      * **/
-    private static TableGeneration secondGenerationTable(int m, int n) {
+    private static TableGeneration secondTableGeneration(int m, int n) {
         int[][] table = new int[m][n];
         for (int i = 0; i < m; ++i) {
             for (int j = 0; j < n; ++j) {

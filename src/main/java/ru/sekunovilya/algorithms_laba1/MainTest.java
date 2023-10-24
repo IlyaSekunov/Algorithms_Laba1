@@ -193,7 +193,8 @@ public class MainTest extends Application {
      * Enriches line chart with 3 lines which called 'Binary search', 'Ladder search' and 'Ladder exponent search'.
      * Table generator is used to generate table and receive target
      * Test each algorithm and add information at chart. To make results more honest each algorithm is tested
-     * TESTS_COUNT = 25 times and then takes average value from all test.
+     * TESTS_COUNT is a variable that determines how much times algorithm is being tested.
+     * Then average of all tests is captured.
      * @param lineChart line chart to be enriched with points
      * @param tableGenerator table generator which provides table and target
      * **/
